@@ -39,6 +39,7 @@
 #include "L0_LowLevel/delay.hpp"
 #include "L0_LowLevel/LPC40xx.h"
 #include "L0_LowLevel/startup.hpp"
+#include "L1_Drivers/system_clock.hpp"
 #include "L0_LowLevel/uart0.hpp"
 #include "L1_Drivers/system_timer.hpp"
 #include "L2_Utilities/debug_print.hpp"
@@ -150,13 +151,8 @@ const IsrPointer kInterruptVectorTable[] = {
     vPortSVCHandler,        // SVCall handler
     DebugMonHandler,        // Debug monitor handler
     0,                      // Reserved
-// FreeRTOS is disabled/removed for bootloaders, to keep the flash size down.
-#if defined(BOOTLOADER)
-    PendSVHandler,          // The PendSV handler
-#else
     xPortPendSVHandler,     // FreeRTOS PendSV Handler
-#endif  // defined(BOOTLOADER)
-    SysTickHandler,  // The SysTick handler
+    SysTickHandler,         // The SysTick handler
     // Chip Level - LPC40xx
     WdtIrqHandler,          // 16, 0x40 - WDT
     Timer0IrqHandler,       // 17, 0x44 - TIMER0
@@ -352,8 +348,11 @@ SJ2_WEAK void LowLevelInit()
     SetupTimerInterrupt();
 }
 
+SystemClock clock;
+
 inline void SystemInit()
 {
+
     InitDataSection();
     InitBssSection();
     InitFpu();
@@ -361,9 +360,10 @@ inline void SystemInit()
     // Initialisation C++ libraries
     __libc_init_array();
 #endif
+    // Set Clock Speed
+    clock.SetClockFrequency(config::kSystemClockRateMhz);
     // Enable Peripheral Clock
-    // TODO(#30): Replace this with a System Clock Driver.
-    LPC_SC->PCLKSEL = 1;
+    clock.SetPeripheralClockDivider(1);
     // required for printf and scanf to work properly
     uart0::Init(config::kBaudRate);
     LowLevelInit();
