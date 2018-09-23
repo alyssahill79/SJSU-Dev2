@@ -18,18 +18,20 @@ class GpioInterface
          kLow  = 0,
          kHigh = 1
      };
-     virtual void SetAsInput(void)                                    = 0;
-     virtual void SetAsOutput(void)                                   = 0;
-     virtual void SetDirection(GpioInterface::PinDirection direction) = 0;
-     virtual void SetHigh(void)                                       = 0;
-     virtual void SetLow(void)                                        = 0;
-     virtual void Set(GpioInterface::PinOutput output = kHigh)        = 0;
-     virtual bool ReadPin(void)                                       = 0;
+     virtual void SetAsInput(void)                     = 0;
+     virtual void SetAsOutput(void)                    = 0;
+     virtual void SetDirection(PinDirection direction) = 0;
+     virtual void SetHigh(void)                        = 0;
+     virtual void SetLow(void)                         = 0;
+     virtual void Set(PinOutput output = kHigh)        = 0;
+     virtual void Toggle()                             = 0;
+     virtual PinOutput ReadPin(void)                   = 0;
 };
 
 class Gpio : public GpioInterface, public PinConfigure
 {
  public:
+    static constexpr uint8_t kGpioFunction = 0;
     // Used to point to a certain port located in LPC memory map
     // Defined in gpio.cpp
     static LPC_GPIO_TypeDef * gpio_base[6];
@@ -43,16 +45,18 @@ class Gpio : public GpioInterface, public PinConfigure
     // Sets the GPIO pin direction as input
     void SetAsInput(void) override
     {
+        SetPinFunction(kGpioFunction);
         gpio_base[kPort]->DIR &= ~(1 << kPin);
     }
     // Sets the GPIO pin direction as output
     void SetAsOutput(void) override
     {
+        SetPinFunction(kGpioFunction);
         gpio_base[kPort]->DIR |= (1 << kPin);
     }
     // Sets the GPIO pin direction as output or input depending on the
     // PinDirection enum parameter
-    inline void SetDirection(GpioInterface::PinDirection direction) override
+    inline void SetDirection(PinDirection direction) override
     {
         (direction) ? SetAsOutput() : SetAsInput();
     }
@@ -68,14 +72,18 @@ class Gpio : public GpioInterface, public PinConfigure
     }
     // Sets the GPIO output pin to high or low depending on the PinOutput enum
     // parameter
-    void Set(GpioInterface::PinOutput output = kHigh) override
+    void Set(PinOutput output = kHigh) override
     {
         (output) ? SetHigh() : SetLow();
     }
-
-    // Returns true if input or output pin is high
-    bool ReadPin(void) override
+    // Toggle the output of a GPIO output pin
+    void Toggle() override
     {
-        return ((gpio_base[kPort]->PIN >> kPin) & 1);
+        (ReadPin() == PinOutput::kHigh) ? SetLow() : SetHigh();
+    }
+    // Returns true if input or output pin is high
+    PinOutput ReadPin(void) override
+    {
+        return static_cast<PinOutput>((gpio_base[kPort]->PIN >> kPin) & 1);
     }
 };
