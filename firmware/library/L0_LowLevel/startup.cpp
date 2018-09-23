@@ -39,6 +39,7 @@
 #include "L0_LowLevel/delay.hpp"
 #include "L0_LowLevel/LPC40xx.h"
 #include "L0_LowLevel/startup.hpp"
+#include "L0_LowLevel/interrupt.hpp"
 #include "L1_Drivers/system_clock.hpp"
 #include "L0_LowLevel/uart0.hpp"
 #include "L1_Drivers/system_timer.hpp"
@@ -242,6 +243,11 @@ IsrPointer dynamic_isr_vector_table[] = {
     EepromIrqHandler,       // 56, 0xe0 - EEPROM
 };
 
+extern "C" void vPortSetupTimerInterrupt(void)
+{
+    // Empty implementation, startup handles this itself.
+}
+
 // .data Section Table Information
 SJ2_PACKED(struct)
 DataSectionTable_t
@@ -329,26 +335,28 @@ void InitializeFreeRTOSSystemTick()
 
 void SetupTimerInterrupt()
 {
-    DEBUG_PRINT("Setting up SystemTick Timer...");
     system_timer.SetIsrFunction(InitializeFreeRTOSSystemTick);
     system_timer.SetTickFrequency(config::kRtosFrequency);
-    bool timer_started_successfully = system_timer.StartTimer();
-    if (timer_started_successfully)
-    {
-        DEBUG_PRINT("System Timer has begun.");
-    }
-    else
-    {
-        DEBUG_PRINT("System Timer has FAILED!!");
-    }
-}
-
-SJ2_WEAK void LowLevelInit()
-{
-    SetupTimerInterrupt();
+    SJ2_ASSERT_WARNING(system_timer.StartTimer(), "System Timer FAILED to start!");
 }
 
 SystemClock clock;
+
+SJ2_WEAK void LowLevelInit()
+{
+    // Set Clock Speed
+    clock.SetClockFrequency(config::kSystemClockRateMhz);
+    // Enable Peripheral Clock
+    clock.SetPeripheralClockDivider(1);
+	// Ensure all priority bits are assigned as preemption priority bits.
+	// NVIC_SetPriorityGrouping( 0 );
+    // NVIC_SetPriority(SysTick_IRQn, configKERNEL_INTERRUPT_PRIORITY);
+    // NVIC_SetPriority(PendSV_IRQn, configMAX_SYSCALL_INTERRUPT_PRIORITY);
+    // NVIC_SetPriority(SVCall_IRQn, configMAX_SYSCALL_INTERRUPT_PRIORITY);
+    // required for printf and scanf to work properly
+    uart0::Init(config::kBaudRate);
+    SetupTimerInterrupt();
+}
 
 inline void SystemInit()
 {
@@ -360,12 +368,6 @@ inline void SystemInit()
     // Initialisation C++ libraries
     __libc_init_array();
 #endif
-    // Set Clock Speed
-    clock.SetClockFrequency(config::kSystemClockRateMhz);
-    // Enable Peripheral Clock
-    clock.SetPeripheralClockDivider(1);
-    // required for printf and scanf to work properly
-    uart0::Init(config::kBaudRate);
     LowLevelInit();
 }
 

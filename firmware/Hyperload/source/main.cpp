@@ -25,14 +25,21 @@
 
 void EmptyIsr() {}
 // Replace startup.cpp's version of LowLevelInit
-void LowLevelInit()
-{
-    // The system timer must be enabled to allow the Delay and Milliseconds
-    // functions to operate.
-    system_timer.SetIsrFunction(EmptyIsr);
-    system_timer.SetTickFrequency(1000);
-    system_timer.StartTimer();
-}
+// void LowLevelInit()
+// {
+//     // Set Clock Speed
+//     clock.SetClockFrequency(config::kSystemClockRateMhz);
+//     // Enable Peripheral Clock
+//     clock.SetPeripheralClockDivider(1);
+// 	// Ensure all priority bits are assigned as preemption priority bits.
+//     // required for printf and scanf to work properly
+//     uart0::Init(config::kBaudRate);
+//     // The system timer must be enabled to allow the Delay and Milliseconds
+//     // functions to operate.
+//     system_timer.SetIsrFunction(EmptyIsr);
+//     system_timer.SetTickFrequency(1000);
+//     system_timer.StartTimer();
+// }
 
 // Overriding printf to supply a static memory .text efficient variant.
 // NOLINTNEXTLINE(readability-identifier-naming)

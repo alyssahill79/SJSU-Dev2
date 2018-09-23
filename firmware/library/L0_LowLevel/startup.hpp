@@ -1,11 +1,12 @@
 #pragma once
 
 #include "L0_LowLevel/LPC40xx.h"
+#include "L0_LowLevel/interrupt.hpp"
+#include "L1_Drivers/system_clock.hpp"
 #include "L1_Drivers/system_timer.hpp"
-// Define an alias for the Isr function pointer.
-using IsrPointer = void (*)(void);
 
 extern SystemTimer system_timer;
+extern SystemClock clock;
 
 extern const IsrPointer kInterruptVectorTable[];
 extern IsrPointer dynamic_isr_vector_table[];
