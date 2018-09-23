@@ -30,6 +30,11 @@ class OnBoardLedInterface
 class OnBoardLed : public OnBoardLedInterface
 {
  public:
+    constexpr OnBoardLed():
+        led { Gpio(1, 1), Gpio(1, 8), Gpio(1, 10), Gpio(1, 15) }
+    {
+
+    }
     // Initialize takes the array of Gpios, sets each one to an output, and
     // then turns off all of the leds by setting the output high.
     void Initialize(void) override
@@ -116,14 +121,14 @@ class OnBoardLed : public OnBoardLedInterface
     // significant bits will be used. The four most significant bits will be 0s.
     uint8_t GetStates(void) override
     {
-        uint8_t led_states = 0x00;
+        uint32_t led_states = 0x00;
         for (uint8_t i = 0; i < 4; i++)
         {
-            led_states |= static_cast<uint8_t>(led[i].ReadPin()) << i;
+            led_states |= led[i].ReadPin() << i;
         }
-        return led_states;
+        return static_cast<uint8_t>(led_states);
     }
 
  protected:
-    Gpio led[4] = { Gpio(1, 1), Gpio(1, 8), Gpio(1, 10), Gpio(1, 15) };
+    Gpio led[4];
 };
